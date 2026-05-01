@@ -19,6 +19,16 @@ app.post("/chat", async (req, res) => {
 
   const message = (req.body.message || "").toLowerCase().trim();
 
+// =========================
+// RESPUESTAS DESPUÉS DE COTIZACIÓN
+// =========================
+
+if (message.includes("quote") || message.includes("proceed") || message.includes("yes")) {
+  return res.json({
+    reply: "Perfect. Please provide your email and any project details or files. We will send you a formal quote shortly."
+  });
+}
+  
   // =========================
   // PASO 1: TIPO DE PROYECTO
   // =========================
