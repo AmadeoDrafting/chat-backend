@@ -14,29 +14,38 @@ app.post("/chat", (req, res) => {
   // =========================
   // PASO 1: SERVICIO
   // =========================
-  if (!userData.service) {
+if (!userData.service) {
 
-    if (["shop", "shop drawings"].includes(message)) {
-      userData.service = "shop";
-    } 
-    else if (["solidworks"].includes(message)) {
-      userData.service = "solidworks";
-    } 
-    else if (["steel"].includes(message)) {
-      userData.service = "steel";
-    } 
-    else {
-      return res.json({
-        reply: "Please select a service:",
-        options: ["Shop Drawings", "SolidWorks", "Steel Structure", "Other"]
-      });
-    }
-
+  if (message.includes("shop")) {
+    userData.service = "shop";
+  } 
+  else if (message.includes("3d") || message.includes("model")) {
+    userData.service = "3d_modeling";
+  } 
+  else if (message.includes("steel")) {
+    userData.service = "steel";
+  } 
+  else if (message.includes("architecture")) {
+    userData.service = "architecture";
+  } 
+  else {
     return res.json({
-      reply: "Select project size:",
-      options: ["Small", "Medium", "Large"]
+      reply: "Please select a service:",
+      options: [
+        "Shop Drawings",
+        "3D Modeling (SolidWorks)",
+        "Structural Steel Detailing",
+        "Architectural Drafting",
+        "Custom Project"
+      ]
     });
   }
+
+  return res.json({
+    reply: "Select project size:",
+    options: ["Small", "Medium", "Large"]
+  });
+}
 
   // =========================
   // PASO 2: TAMAÑO
@@ -73,8 +82,9 @@ app.post("/chat", (req, res) => {
 
     // base por servicio
     if (userData.service === "shop") hours = 6;
-    if (userData.service === "solidworks") hours = 5;
+    if (userData.service === "3d_modeling") hours = 5;
     if (userData.service === "steel") hours = 8;
+    if (userData.service === "architecture") hours = 7;
 
     // tamaño
     if (userData.size === "medium") hours += 4;
