@@ -6,34 +6,63 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// memoria simple (por ahora)
+let userData = {};
+
 app.post("/chat", async (req, res) => {
-  const userMessage = req.body.message;
 
-  try {
-    const response = await fetch("https://api.openai.com/v1/responses", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        model: "gpt-4.1-mini",
-        input: `You are an assistant for a drafting company called Amadeo Engineer Design.
-Ask questions to understand the project and estimate it.
+  const message = req.body.message.toLowerCase();
 
-User: ${userMessage}`
-      })
+  // Paso 1: tipo de proyecto
+  if (!userData.type) {
+
+    if (message.includes("shop") || message.includes("drawing")) {
+      userData.type = "shop_drawings";
+    } else if (message.includes("solidworks")) {
+      userData.type = "solidworks";
+    } else if (message.includes("steel")) {
+      userData.type = "steel";
+    }
+
+    return res.json({
+      reply: "Great. What is the approximate size or scope of the project?"
     });
-
-    const data = await response.json();
-
-    const reply = data.output[0].content[0].text;
-
-    res.json({ reply });
-
-  } catch (error) {
-    res.status(500).json({ reply: "Error contacting AI" });
   }
-});
 
+  // Paso 2: tamaño
+  if (!userData.size) {
+    userData.size = message;
+    return res.json({
+      reply: "Would you say the project is simple or complex?"
+    });
+  }
+
+  // Paso 3: complejidad
+  if (!userData.complexity) {
+    if (message.includes("complex")) {
+      userData.complexity = "complex";
+    } else {
+      userData.complexity = "simple";
+    }
+
+    // 💰 CALCULAR PRECIO
+    let price = 0;
+
+    if (userData.type === "shop_drawings") price += 150;
+    if (userData.type === "solidworks") price += 200;
+    if (userData.type === "steel") price += 300;
+
+    if (userData.complexity === "complex") price += 150;
+
+    const finalPrice = price;
+
+    // reset para siguiente cliente
+    userData = {};
+
+    return res.json({
+      reply: `Based on your project, the estimated price is $${finalPrice} CAD. Would you like to proceed or receive a formal quote?`
+    });
+  }
+
+});
 app.listen(3000, () => console.log("Server running"));
