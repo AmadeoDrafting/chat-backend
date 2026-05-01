@@ -12,46 +12,76 @@ app.post("/chat", (req, res) => {
   const message = (req.body.message || "").toLowerCase().trim();
 
   // =========================
-  // PASO 1: SERVICIO
+  // ACCIONES DESPUÉS DE COTIZACIÓN (solo si ya terminó)
   // =========================
-if (!userData.service) {
+  if (userData.finished) {
 
-  if (message.includes("shop")) {
-    userData.service = "shop";
-  } 
-  else if (message.includes("3d") || message.includes("model")) {
-    userData.service = "3d_modeling";
-  } 
-  else if (message.includes("steel")) {
-    userData.service = "steel";
-  } 
-  else if (message.includes("architecture")) {
-    userData.service = "architecture";
-  } 
-  else {
-    return res.json({
-      reply: "Please select a service:",
-      options: [
-        "Shop Drawings",
-        "3D Modeling (SolidWorks)",
-        "Structural Steel Detailing",
-        "Architectural Drafting",
-        "Custom Project"
-      ]
-    });
+    if (message.includes("yes") || message.includes("quote")) {
+      userData = {};
+      return res.json({
+        reply: "Perfect. Please provide your email and attach any files. We will send you a formal quote shortly."
+      });
+    }
+
+    if (message.includes("modify")) {
+      userData = {};
+      return res.json({
+        reply: "No problem. Let's start again. Please select a service:",
+        options: [
+          "Shop Drawings",
+          "3D Modeling (SolidWorks)",
+          "Structural Steel Detailing",
+          "Architectural Drafting",
+          "Custom Project"
+        ]
+      });
+    }
   }
 
-  return res.json({
-    reply: "Select project size:",
-    options: ["Small", "Medium", "Large"]
-  });
-}
+  // =========================
+  // PASO 1: SERVICIO
+  // =========================
+  if (!userData.service) {
+
+    if (message.includes("shop")) {
+      userData.service = "shop";
+    } 
+    else if (message.includes("3d") || message.includes("model")) {
+      userData.service = "3d_modeling";
+    } 
+    else if (message.includes("steel")) {
+      userData.service = "steel";
+    } 
+    else if (message.includes("architecture")) {
+      userData.service = "architecture";
+    } 
+    else {
+      return res.json({
+        reply: "Please select a service:",
+        options: [
+          "Shop Drawings",
+          "3D Modeling (SolidWorks)",
+          "Structural Steel Detailing",
+          "Architectural Drafting",
+          "Custom Project"
+        ]
+      });
+    }
+
+    return res.json({
+      reply: "Select project size:",
+      options: ["Small", "Medium", "Large"]
+    });
+  }
 
   // =========================
   // PASO 2: TAMAÑO
   // =========================
   if (!userData.size) {
-    userData.size = message;
+
+    if (message.includes("small")) userData.size = "small";
+    else if (message.includes("medium")) userData.size = "medium";
+    else if (message.includes("large")) userData.size = "large";
 
     return res.json({
       reply: "Select complexity:",
@@ -63,7 +93,10 @@ if (!userData.service) {
   // PASO 3: COMPLEJIDAD
   // =========================
   if (!userData.complexity) {
-    userData.complexity = message;
+
+    if (message.includes("simple")) userData.complexity = "simple";
+    else if (message.includes("medium")) userData.complexity = "medium";
+    else if (message.includes("complex")) userData.complexity = "complex";
 
     return res.json({
       reply: "Select deadline:",
@@ -75,31 +108,30 @@ if (!userData.service) {
   // PASO 4: DEADLINE
   // =========================
   if (!userData.deadline) {
-    userData.deadline = message;
 
-    // ⏱️ ESTIMAR HORAS
+    if (message.includes("urgent")) userData.deadline = "urgent";
+    else userData.deadline = "standard";
+
+    // ⏱️ ESTIMACIÓN DE HORAS
     let hours = 0;
 
-    // base por servicio
     if (userData.service === "shop") hours = 6;
     if (userData.service === "3d_modeling") hours = 5;
     if (userData.service === "steel") hours = 8;
     if (userData.service === "architecture") hours = 7;
 
-    // tamaño
     if (userData.size === "medium") hours += 4;
     if (userData.size === "large") hours += 8;
 
-    // complejidad
-    if (userData.complexity === "complex") hours += 6;
     if (userData.complexity === "medium") hours += 3;
+    if (userData.complexity === "complex") hours += 6;
 
-    // urgencia
     if (userData.deadline === "urgent") hours *= 1.2;
 
     const price = Math.round(hours * 50);
 
-    userData = {};
+    // marcar como terminado
+    userData.finished = true;
 
     return res.json({
       reply: `Estimated time: ${Math.round(hours)} hours.\nEstimated cost: $${price} CAD.\n\nWould you like a formal quote?`,
