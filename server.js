@@ -5,52 +5,36 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// memoria simple (1 usuario por ahora)
 let userData = {};
 
-app.post("/chat", async (req, res) => {
-
-  // seguridad básica
-  if (!req.body.message) {
-    return res.json({
-      reply: "Please select an option or type your message."
-    });
-  }
+app.post("/chat", (req, res) => {
 
   const message = (req.body.message || "").toLowerCase().trim();
 
-// =========================
-// RESPUESTAS DESPUÉS DE COTIZACIÓN
-// =========================
-
-if (message.includes("quote") || message.includes("proceed") || message.includes("yes")) {
-  return res.json({
-    reply: "Perfect. Please provide your email and any project details or files. We will send you a formal quote shortly."
-  });
-}
-  
   // =========================
-  // PASO 1: TIPO DE PROYECTO
+  // PASO 1: SERVICIO
   // =========================
-  if (!userData.type) {
+  if (!userData.service) {
 
-    if (message.includes("shop") || message.includes("drawing")) {
-      userData.type = "shop_drawings";
+    if (["shop", "shop drawings"].includes(message)) {
+      userData.service = "shop";
     } 
-    else if (message.includes("solidworks")) {
-      userData.type = "solidworks";
+    else if (["solidworks"].includes(message)) {
+      userData.service = "solidworks";
     } 
-    else if (message.includes("steel")) {
-      userData.type = "steel";
+    else if (["steel"].includes(message)) {
+      userData.service = "steel";
     } 
     else {
       return res.json({
-        reply: "Please choose one option: Shop drawings, SolidWorks, or Steel structure. You can also click 'Other'."
+        reply: "Please select a service:",
+        options: ["Shop Drawings", "SolidWorks", "Steel Structure", "Other"]
       });
     }
 
     return res.json({
-      reply: "Great. What is the approximate size or scope of the project?"
+      reply: "Select project size:",
+      options: ["Small", "Medium", "Large"]
     });
   }
 
@@ -61,7 +45,8 @@ if (message.includes("quote") || message.includes("proceed") || message.includes
     userData.size = message;
 
     return res.json({
-      reply: "Would you say the project is simple or complex?"
+      reply: "Select complexity:",
+      options: ["Simple", "Medium", "Complex"]
     });
   }
 
@@ -69,35 +54,49 @@ if (message.includes("quote") || message.includes("proceed") || message.includes
   // PASO 3: COMPLEJIDAD
   // =========================
   if (!userData.complexity) {
+    userData.complexity = message;
 
-    if (message.includes("complex")) {
-      userData.complexity = "complex";
-    } else {
-      userData.complexity = "simple";
-    }
+    return res.json({
+      reply: "Select deadline:",
+      options: ["Standard", "Urgent"]
+    });
+  }
 
-    // =========================
-    // 💰 CÁLCULO DE PRECIO
-    // =========================
-    let price = 0;
+  // =========================
+  // PASO 4: DEADLINE
+  // =========================
+  if (!userData.deadline) {
+    userData.deadline = message;
 
-    if (userData.type === "shop_drawings") price += 150;
-    if (userData.type === "solidworks") price += 200;
-    if (userData.type === "steel") price += 300;
+    // ⏱️ ESTIMAR HORAS
+    let hours = 0;
 
-    if (userData.complexity === "complex") price += 150;
+    // base por servicio
+    if (userData.service === "shop") hours = 6;
+    if (userData.service === "solidworks") hours = 5;
+    if (userData.service === "steel") hours = 8;
 
-    const finalPrice = price;
+    // tamaño
+    if (userData.size === "medium") hours += 4;
+    if (userData.size === "large") hours += 8;
 
-    // reset para siguiente cliente
+    // complejidad
+    if (userData.complexity === "complex") hours += 6;
+    if (userData.complexity === "medium") hours += 3;
+
+    // urgencia
+    if (userData.deadline === "urgent") hours *= 1.2;
+
+    const price = Math.round(hours * 50);
+
     userData = {};
 
     return res.json({
-      reply: `Based on your project, the estimated price is $${finalPrice} CAD. Would you like to proceed or receive a formal quote?`
+      reply: `Estimated time: ${Math.round(hours)} hours.\nEstimated cost: $${price} CAD.\n\nWould you like a formal quote?`,
+      options: ["Yes, send quote", "Modify project", "Other"]
     });
   }
 
 });
 
-// servidor
 app.listen(3000, () => console.log("Server running"));
