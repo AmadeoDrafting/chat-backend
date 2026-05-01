@@ -12,18 +12,18 @@ app.post("/chat", (req, res) => {
   const message = (req.body.message || "").toLowerCase().trim();
 
   // =========================
-  // ACCIONES DESPUÉS DE COTIZACIÓN (solo si ya terminó)
+  // ACCIONES DESPUÉS DE COTIZACIÓN
   // =========================
   if (userData.finished) {
 
-    if (message.includes("yes") || message.includes("quote")) {
+    if (message.includes("quote") || message.includes("yes")) {
       userData = {};
       return res.json({
         reply: "Perfect. Please provide your email and attach any files. We will send you a formal quote shortly."
       });
     }
 
-    if (message.includes("modify")) {
+    if (message.includes("modify") || message.includes("adjust")) {
       userData = {};
       return res.json({
         reply: "No problem. Let's start again. Please select a service:",
@@ -54,6 +54,13 @@ app.post("/chat", (req, res) => {
     } 
     else if (message.includes("architecture")) {
       userData.service = "architecture";
+    } 
+    else if (message.includes("custom")) {
+      // 🔥 NO cotiza → pasa a modo manual
+      userData = {};
+      return res.json({
+        reply: "Please describe your project and include your email. You can also attach files. We will review it and send you a custom quote."
+      });
     } 
     else {
       return res.json({
@@ -134,8 +141,12 @@ app.post("/chat", (req, res) => {
     userData.finished = true;
 
     return res.json({
-      reply: `Estimated time: ${Math.round(hours)} hours.\nEstimated cost: $${price} CAD.\n\nWould you like a formal quote?`,
-      options: ["Yes, send quote", "Modify project", "Other"]
+      reply: `Estimated time: ${Math.round(hours)} hours.\nEstimated cost: $${price} CAD.\n\nWould you like to request a formal quote?`,
+      options: [
+        "Request Formal Quote",
+        "Adjust Project",
+        "Custom Project"
+      ]
     });
   }
 
